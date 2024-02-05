@@ -1,61 +1,41 @@
-const STORAGE_KEY = "feedback-form-state";
 
-const form = document.querySelector('.feedback-form');
-const textarea = form.querySelector('textarea');
+import iziToast from "izitoast";
+import "izitoast/dist/css/iziToast.min.css";
 
-form.addEventListener('input', handleInput);
-form.addEventListener('submit', handleSubmit);
+const form = document.querySelector('.form');
 
-function handleSubmit(e) {
-  e.preventDefault();
+form.addEventListener("submit", handleSubmit);
 
-  const email = form.elements.email.value.trim();
-  const message = form.elements.message.value.trim();
+function handleSubmit(event) {
+  event.preventDefault();
+  const delay = form.delay.value;
+  const state = form.state.value;
 
-  if (email === "" || message === "") {
-    alert("All form fields must be filled in");
-  } else {
-    const data = {
-      email,
-      message,
-    };
-    console.log(data);
+  const promise = new Promise((resolve, reject) => {
+    if (state === "fulfilled") {
+      setTimeout(() => resolve(state), delay);
+    } else {
+      setTimeout(() => reject(state), delay);
+    }
+  });
 
-    localStorage.removeItem(STORAGE_KEY);
-    form.reset();
-  }
+  promise
+    .then(value => {
+      iziToast.show({
+        position: 'topRight',
+        color: 'green', // blue, red, green, yellow
+        message: `✅ Fulfilled promise in ${delay}ms`,
+      });
+    })
+    .catch(error => {
+      iziToast.show({
+        position: 'topRight',
+        color: 'red',
+        message: `❌ Rejected promise in ${delay}ms`,
+      });
+    });
+  form.reset();
 }
 
-function handleInput() {
-  const email = form.elements.email.value.trim();
-  const message = form.elements.message.value.trim();
 
-  const data = {
-    email,
-    message,
-  };
 
-  saveToLS(STORAGE_KEY, data);
-}
-
-function saveToLS(key, value) {
-  const zip = JSON.stringify(value);
-  localStorage.setItem(key, zip);
-}
-
-function loadFromLS(key) {
-  const zip = localStorage.getItem(key);
-  try {
-    return JSON.parse(zip);
-  } catch {
-    return zip;
-  }
-}
-
-function init() {
-  const data = loadFromLS(STORAGE_KEY) || {};
-  form.elements.email.value = data.email || '';
-  form.elements.message.value = data.message || '';
-}
-
-init();

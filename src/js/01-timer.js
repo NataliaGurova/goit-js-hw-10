@@ -1,103 +1,96 @@
-const images = [
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2019/05/14/16/43/rchids-4202820__480.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2019/05/14/16/43/rchids-4202820_1280.jpg",
-    description: "Hokkaido Flower",
-  },
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2019/05/14/22/05/container-4203677__340.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2019/05/14/22/05/container-4203677_1280.jpg",
-    description: "Container Haulage Freight",
-  },
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2019/05/16/09/47/beach-4206785__340.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2019/05/16/09/47/beach-4206785_1280.jpg",
-    description: "Aerial Beach View",
-  },
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2016/11/18/16/19/flowers-1835619__340.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2016/11/18/16/19/flowers-1835619_1280.jpg",
-    description: "Flower Blooms",
-  },
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2018/09/13/10/36/mountains-3674334__340.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2018/09/13/10/36/mountains-3674334_1280.jpg",
-    description: "Alpine Mountains",
-  },
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2019/05/16/23/04/landscape-4208571__340.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2019/05/16/23/04/landscape-4208571_1280.jpg",
-    description: "Mountain Lake Sailing",
-  },
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2019/05/17/09/27/the-alps-4209272__340.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2019/05/17/09/27/the-alps-4209272_1280.jpg",
-    description: "Alpine Spring Meadows",
-  },
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2019/05/16/21/10/landscape-4208255__340.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2019/05/16/21/10/landscape-4208255_1280.jpg",
-    description: "Nature Landscape",
-  },
-  {
-    preview:
-      "https://cdn.pixabay.com/photo/2019/05/17/04/35/lighthouse-4208843__340.jpg",
-    original:
-      "https://cdn.pixabay.com/photo/2019/05/17/04/35/lighthouse-4208843_1280.jpg",
-    description: "Lighthouse Coast Sea",
-  },
-];
+import flatpickr from "flatpickr";
+import 'flatpickr/dist/flatpickr.min.css';
+import iziToast from "izitoast";
+import "izitoast/dist/css/iziToast.min.css";
 
-import SimpleLightbox from "simplelightbox";
-import 'simplelightbox/dist/simple-lightbox.min.css';
+const inputData = document.querySelector("#datetime-picker");
+const startButton = document.querySelector("[data-start]");
+const daysEl = document.querySelector("[data-days]");
+const hoursEl = document.querySelector("[data-hours]");
+const minutesEl = document.querySelector("[data-minutes]");
+const secondsEl = document.querySelector("[data-seconds]");
 
-const gallery = document.querySelector(".gallery");
+startButton.disabled = true;
 
-function showGallery() {
-  const previewGallery = images
-    .map(({ preview, original, description }) => {
-      return `
-        <li class="gallery-item">
-          <a class="gallery-link" href="${original}">
-            <img
-              class="gallery-image"
-              src="${preview}"
-              alt="${description}"
-            />
-          </a>
-        </li>
-      `;
-    })
-    .join("\n\n");
-  gallery.innerHTML = previewGallery;
+let userSelectedDate;
+
+startButton.addEventListener("click", timerStart);
+
+const options = {
+  enableTime: true,
+  time_24hr: true,
+  defaultDate: new Date(),
+  minuteIncrement: 1,
+  onClose(selectedDates) {
+    if(selectedDates[0] > Date.now()) {
+      userSelectedDate = selectedDates[0]
+      startButton.disabled = false;
+      updateCountdown();
+    } else {
+      startButton.disabled = true;
+      iziToast.show({
+        position: 'topRight',
+        color: 'red', 
+        message: "Please choose a date in the future",
+      });
+    }  
+  },
+};
+
+flatpickr(inputData, options);
+
+let countdownInterval;
+
+function timerStart() {
+  countdownInterval = setInterval(updateCountdown, 1000);
+  startButton.disabled = true;
+  inputData.disabled = true;
+};
+
+function timerStop() {
+  clearInterval(countdownInterval);
+  daysEl.textContent = "00";
+  hoursEl.textContent = "00";
+  minutesEl.textContent = "00";
+  secondsEl.textContent = "00";
+  inputData.disabled = false;
 }
 
-showGallery();
+function updateCountdown() {
+  const differenceDate = userSelectedDate - Date.now();
+  const { days, hours, minutes, seconds } = convertMs(differenceDate);
+    daysEl.textContent = addLeadingZero(days);
+    hoursEl.textContent = addLeadingZero(hours);
+    minutesEl.textContent = addLeadingZero(minutes);
+    secondsEl.textContent = addLeadingZero(seconds);
+  if (differenceDate <= 0) {
+    timerStop();
+  } 
+}
 
-const lightbox = new SimpleLightbox('.gallery a', {
-  captions: true,
-  captionType: 'attr',
-  captionsData: 'alt',
-  captionPosition: 'bottom',
-  captionSelector: "img",
-  captionDelay: 250,
-  ScrollZoom: false,
-});
+function addLeadingZero(value) {
+  return value.toString().padStart(2, '0');
+}
 
-lightbox.on("show.simplelightbox");
+function convertMs(ms) {
+  // Number of milliseconds per unit of time
+  const second = 1000;
+  const minute = second * 60;
+  const hour = minute * 60;
+  const day = hour * 24;
+
+  // Remaining days
+  const days = Math.floor(ms / day);
+  // Remaining hours
+  const hours = Math.floor((ms % day) / hour);
+  // Remaining minutes
+  const minutes = Math.floor(((ms % day) % hour) / minute);
+  // Remaining seconds
+  const seconds = Math.floor((((ms % day) % hour) % minute) / second);
+
+  return { days, hours, minutes, seconds };
+}
+
+// console.log(convertMs(2000)); // {days: 0, hours: 0, minutes: 0, seconds: 2}
+// console.log(convertMs(140000)); // {days: 0, hours: 0, minutes: 2, seconds: 20}
+// console.log(convertMs(24140000)); // {days: 0, hours: 6 minutes: 42, seconds: 20}
