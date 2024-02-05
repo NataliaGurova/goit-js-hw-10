@@ -49,6 +49,7 @@ function timerStart() {
 
 function timerStop() {
   clearInterval(countdownInterval);
+  
   daysEl.textContent = "00";
   hoursEl.textContent = "00";
   minutesEl.textContent = "00";
